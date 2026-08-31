@@ -7,7 +7,8 @@
   <style>
     * { margin:0; padding:0; box-sizing:border-box; touch-action:none; user-select:none; }
     body { background:#070714; color:#fff; font-family:'Segoe UI',sans-serif; overflow:hidden; display:flex; justify-content:center; align-items:center; height:100vh; }
-    #canvas-container { position:relative; width:100vw; height:100vh; max-width:800px; max-height:600px; aspect-ratio:4/3; }
+    #canvas-container { position:relative; width:100vw; height:100vh; max-width:800px; }
+    @media (max-width: 600px) { .hud { font-size:14px; } .arcade-nav { font-size:11px; padding:6px 10px; } .steer-hint { display:none; } .ctrl-btn { width:72px; height:72px; } }
     canvas { width:100%; height:100%; display:block; background:#070714; }
     .arcade-nav { position:absolute; top:16px; right:16px; z-index:100; background:rgba(0,0,0,0.7); border:2px solid #ff007f; color:#ff007f; padding:8px 16px; border-radius:8px; font-weight:bold; text-decoration:none; font-size:13px; box-shadow:0 0 15px rgba(255,0,127,0.4); }
     .hud { position:absolute; top:16px; left:16px; font-family:monospace; font-size:18px; font-weight:bold; color:#00f5ff; text-shadow:0 0 10px #00f5ff; pointer-events:none; }
@@ -33,8 +34,8 @@
       <div>NITRO: <span id="nitro-val">100%</span></div>
     </div>
     
-    <div class="steer-hint">A / D / Mouse to Switch Lanes • Space / Click for Nitro ⚡</div>
-    
+    <canvas id="gameCanvas" width="800" height="600"></canvas>
+
     <div class="mobile-controls">
       <div style="display:flex; gap:14px;">
         <div class="ctrl-btn" id="btn-left">◀</div>
@@ -42,8 +43,8 @@
       </div>
       <div class="ctrl-btn nitro-btn" id="btn-nitro">⚡</div>
     </div>
-
-    <canvas id="gameCanvas" width="800" height="600"></canvas>
+    
+    <div class="steer-hint">A / D / Mouse to Switch Lanes • Space / Click for Nitro ⚡</div>
     
     <div id="gameover-modal">
       <h1>CRASHED! 💥</h1>
