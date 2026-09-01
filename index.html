@@ -136,24 +136,39 @@
     nitroBtn.addEventListener('touchend', e => { e.preventDefault(); isBoosting = false; });
 
     let spawnTimer = 0;
+    let pickups = [];
+
     function spawnTraffic() {
       spawnTimer++;
-      if (spawnTimer > 75) { // Spawn every ~1.2 seconds
+      if (spawnTimer > 85) { // Fair, controlled spawn cadence
         spawnTimer = 0;
-        const chosenLane = LANES[Math.floor(Math.random() * LANES.length)];
-        traffic.push({
-          laneX: chosenLane,
-          z: 1.0, // Start far on horizon
-          color: ['#ff007f', '#00f5ff', '#ffff00', '#00ff88', '#b967ff'][Math.floor(Math.random() * 5)],
-          nearMissGiven: false
-        });
+        // Never block all lanes — randomly pick 1 or 2 lanes max
+        const numCars = Math.random() < 0.35 ? 2 : 1;
+        const availableLanes = [...LANES].sort(() => Math.random() - 0.5);
+
+        for (let i = 0; i < numCars; i++) {
+          traffic.push({
+            laneX: availableLanes[i],
+            z: 1.0,
+            color: ['#ff007f', '#00f5ff', '#ffff00', '#00ff88', '#b967ff'][Math.floor(Math.random() * 5)],
+            nearMissGiven: false
+          });
+        }
+
+        // Spawn occasional Nitro battery pickup in open lane
+        if (Math.random() < 0.30) {
+          const freeLanes = availableLanes.slice(numCars);
+          if (freeLanes.length > 0) {
+            pickups.push({ laneX: freeLanes[0], z: 1.0, collected: false });
+          }
+        }
       }
     }
 
     function restartGame() {
       currentLaneIdx = 1;
       playerX = LANES[currentLaneIdx]; targetPlayerX = LANES[currentLaneIdx];
-      speed = 120; nitro = 100; score = 0; roadOffset = 0; traffic = []; particles = []; isGameOver = false; spawnTimer = 0;
+      speed = 120; nitro = 100; score = 0; roadOffset = 0; traffic = []; pickups = []; particles = []; isGameOver = false; spawnTimer = 0;
       document.getElementById('gameover-modal').style.display = 'none';
       requestAnimationFrame(loop);
     }
@@ -161,14 +176,14 @@
     function loop() {
       if (isGameOver) return;
 
-      // Smooth Steering Lerp
+      // Smooth Steering Lerp with tight grip
       const turnDelta = targetPlayerX - playerX;
-      playerX += turnDelta * 0.18;
+      playerX += turnDelta * 0.22;
 
       // Nitro & Speed
       if (isBoosting && nitro > 0) {
         speed = Math.min(speed + 2.5, maxSpeed);
-        nitro -= 0.4;
+        nitro -= 0.35;
         // Nitro flame particles
         for (let i=0; i<3; i++) {
           particles.push({
@@ -181,7 +196,7 @@
         }
       } else {
         speed = Math.max(speed - 1.5, baseSpeed);
-        if (nitro < 100) nitro += 0.15;
+        if (nitro < 100) nitro += 0.20;
       }
 
       score += Math.floor(speed * 0.05);
@@ -225,8 +240,40 @@
         }
       }
 
-      // Draw & Update Traffic (Approaches over ~3.5 seconds)
+      // Draw & Update Nitro Pickups
       const approachSpeed = 0.007 * (speed / 120);
+      const playerScreenX = 400 + playerX * 240;
+
+      for (let i = pickups.length - 1; i >= 0; i--) {
+        const pu = pickups[i];
+        pu.z -= approachSpeed;
+        if (pu.z <= -0.1) { pickups.splice(i, 1); continue; }
+
+        const p = (1 - pu.z);
+        const cy = horizon + p * (600 - horizon);
+        const cx = 400 + pu.laneX * p * 340;
+
+        if (!pu.collected) {
+          ctx.fillStyle = '#00f5ff';
+          ctx.shadowColor = '#00f5ff'; ctx.shadowBlur = 15 * p;
+          ctx.beginPath(); ctx.arc(cx, cy - 15 * p, 14 * p, 0, Math.PI * 2); ctx.fill();
+          ctx.fillStyle = '#ffffff';
+          ctx.font = `bold ${Math.max(10, 16 * p)}px sans-serif`;
+          ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+          ctx.fillText('⚡', cx, cy - 15 * p);
+          ctx.shadowBlur = 0;
+
+          if (pu.z < 0.22 && pu.z > 0.02 && Math.abs(cx - playerScreenX) < 48) {
+            pu.collected = true;
+            nitro = Math.min(100, nitro + 35);
+            score += 250;
+            playBeep(1100, 0.12);
+            for (let k=0; k<8; k++) particles.push({ x: cx, y: cy, vx:(Math.random()-0.5)*6, vy:(Math.random()-0.5)*6, color:'#00f5ff', life:1 });
+          }
+        }
+      }
+
+      // Draw & Update Traffic
       for (let i = traffic.length - 1; i >= 0; i--) {
         const car = traffic[i];
         car.z -= approachSpeed;
@@ -250,16 +297,15 @@
         ctx.fillRect(cx + cw*0.16, cy - ch*0.35, cw*0.22, ch*0.3);
 
         // Near Miss Bonus
-        const playerScreenX = 400 + playerX * 240;
-        if (car.z < 0.25 && car.z > 0.05 && !car.nearMissGiven && Math.abs(cx - playerScreenX) > 45 && Math.abs(cx - playerScreenX) < 110) {
+        if (car.z < 0.25 && car.z > 0.05 && !car.nearMissGiven && Math.abs(cx - playerScreenX) > 38 && Math.abs(cx - playerScreenX) < 110) {
           car.nearMissGiven = true;
           score += 150;
           playBeep(900, 0.08);
         }
 
-        // Collision Check (When car reaches player Z range)
-        if (car.z < 0.22 && car.z > 0.02) {
-          if (Math.abs(cx - playerScreenX) < 46) {
+        // Forgiving Collision Check
+        if (car.z < 0.20 && car.z > 0.03) {
+          if (Math.abs(cx - playerScreenX) < 38) {
             isGameOver = true;
             playBeep(120, 0.5);
             document.getElementById('final-score').textContent = score;
