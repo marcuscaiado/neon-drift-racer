@@ -267,7 +267,14 @@
             pu.collected = true;
             nitro = Math.min(100, nitro + 35);
             score += 250;
-            playBeep(1100, 0.12);
+            if (window.DopamineSynth) {
+              window.DopamineSynth.playScore(0.22);
+            } else {
+              playBeep(1100, 0.12);
+            }
+            if (window.DopamineJuice) {
+              window.DopamineJuice.spawnScore(cx, cy, '+250 NITRO ⚡', 2);
+            }
             for (let k=0; k<8; k++) particles.push({ x: cx, y: cy, vx:(Math.random()-0.5)*6, vy:(Math.random()-0.5)*6, color:'#00f5ff', life:1 });
           }
         }
@@ -300,14 +307,22 @@
         if (car.z < 0.25 && car.z > 0.05 && !car.nearMissGiven && Math.abs(cx - playerScreenX) > 38 && Math.abs(cx - playerScreenX) < 110) {
           car.nearMissGiven = true;
           score += 150;
-          playBeep(900, 0.08);
+          if (window.DopamineSynth) {
+            window.DopamineSynth.playCombo(2);
+          } else {
+            playBeep(900, 0.08);
+          }
+          if (window.DopamineJuice) {
+            window.DopamineJuice.spawnScore(cx, cy, 'NEAR MISS! +150 🏎️', 2);
+          }
         }
 
         // Forgiving Collision Check
         if (car.z < 0.20 && car.z > 0.03) {
           if (Math.abs(cx - playerScreenX) < 38) {
             isGameOver = true;
-            playBeep(120, 0.5);
+            if (window.DopamineSynth) window.DopamineSynth.playWin();
+            if (window.DopamineJuice) window.DopamineJuice.explodeConfetti(window.innerWidth / 2, window.innerHeight * 0.4, 65);
             document.getElementById('final-score').textContent = score;
             document.getElementById('gameover-modal').style.display = 'flex';
             try {
