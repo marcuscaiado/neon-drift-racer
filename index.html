@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
   <title>Neon Drift Racer 🏎️💨</title>
   <script src="arcade-sound-engine.js"></script>
+  <script src="arcade-difficulty.js"></script>
   <script src="arcade-leaderboard.js"></script>
   <style>
     * { margin:0; padding:0; box-sizing:border-box; touch-action:none; user-select:none; }
@@ -156,10 +157,12 @@
 
     function spawnTraffic() {
       spawnTimer++;
-      if (spawnTimer > 85) { // Fair, controlled spawn cadence
+      const trafficCadence = window.ArcadeDifficulty ? ArcadeDifficulty.scaleInterval(85, score, 5500, 48, 1.8) : 85;
+      if (spawnTimer > trafficCadence) { // Fair, controlled spawn cadence
         spawnTimer = 0;
+        const ddaMult = window.ArcadeDifficulty ? ArcadeDifficulty.getMultiplier(score, 5500, 2.0) : 1.0;
         // Never block all lanes — randomly pick 1 or 2 lanes max
-        const numCars = Math.random() < 0.35 ? 2 : 1;
+        const numCars = Math.random() < Math.min(0.55, 0.35 * ddaMult) ? 2 : 1;
         const availableLanes = [...LANES].sort(() => Math.random() - 0.5);
 
         for (let i = 0; i < numCars; i++) {
@@ -182,6 +185,7 @@
     }
 
     function restartGame() {
+      if (window.ArcadeDifficulty) ArcadeDifficulty.reset();
       currentLaneIdx = 1;
       playerX = LANES[currentLaneIdx]; targetPlayerX = LANES[currentLaneIdx];
       speed = 120; nitro = 100; score = 0; roadOffset = 0; traffic = []; pickups = []; particles = []; isGameOver = false; spawnTimer = 0;
@@ -257,7 +261,8 @@
       }
 
       // Draw & Update Nitro Pickups
-      const approachSpeed = 0.007 * (speed / 120);
+      const ddaSpeedScale = window.ArcadeDifficulty ? Math.min(1.35, 0.92 + 0.08 * ArcadeDifficulty.getMultiplier(score, 5500, 2.0)) : 1.0;
+      const approachSpeed = 0.007 * (speed / 120) * ddaSpeedScale;
       const playerScreenX = 400 + playerX * 240;
 
       for (let i = pickups.length - 1; i >= 0; i--) {
