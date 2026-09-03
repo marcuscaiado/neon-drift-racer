@@ -26,11 +26,20 @@
     #gameover-modal { position:absolute; inset:0; background:rgba(0,0,0,0.85); display:none; flex-direction:column; align-items:center; justify-content:center; gap:16px; z-index:200; }
     #gameover-modal h1 { color:#ff007f; font-size:42px; text-shadow:0 0 20px #ff007f; }
     .btn { background:linear-gradient(135deg,#00f5ff,#ff007f); border:none; color:#fff; padding:12px 32px; font-size:18px; font-weight:bold; border-radius:8px; cursor:pointer; text-decoration:none; box-shadow:0 0 20px rgba(0,245,255,0.5); }
-  </style>
+  
+/* Universal Mobile Touch & Top Navigation Safeguards */
+.arcade-nav, .arcade-link, .nav-btn-arcade, .arcade-corner-btn, .arcade-btn, .btn-arcade, a[href*="arcad"], #modal a, #modal button, .modal a, .modal button, #game-over-modal a, #game-over-modal button {
+  pointer-events: auto !important;
+  touch-action: auto !important;
+  cursor: pointer !important;
+  -webkit-tap-highlight-color: rgba(0, 245, 255, 0.4);
+}
+
+</style>
 </head>
 <body>
   <div id="canvas-container">
-    <a href="https://marcuscaiado.github.io/marcus-arcade/" class="arcade-nav">🕹️ Arcade Hub</a>
+    <a href="https://marcuscaiado.github.io/marcus-arcade/" class="arcade-nav" target="_top" onclick="if(window.top){window.top.location.href=this.href;return false;}" ontouchend="if(window.top){window.top.location.href=this.href;return false;}">🕹️ Arcade Hub</a>
     <div class="hud">
       <div>SPEED: <span id="speed-val">120</span> KM/H</div>
       <div>SCORE: <span id="score-val">0</span></div>
@@ -53,7 +62,7 @@
       <h1>CRASHED! 💥</h1>
       <p style="font-size:20px;">SCORE: <span id="final-score">0</span></p>
       <button class="btn" onclick="restartGame()">RACE AGAIN 🔄</button>
-      <a href="https://marcuscaiado.github.io/marcus-arcade/" class="btn" style="background:#222; border:1px solid #ff007f;">ARCADE HUB 🕹️</a>
+      <a href="https://marcuscaiado.github.io/marcus-arcade/" class="btn" style="background:#222; border:1px solid #ff007f;" target="_top" onclick="if(window.top){window.top.location.href=this.href;return false;}" ontouchend="if(window.top){window.top.location.href=this.href;return false;}">ARCADE HUB 🕹️</a>
     </div>
   </div>
 
@@ -128,7 +137,7 @@
     };
 
     window.addEventListener('mousemove', e => setSteerFromPointer(e.clientX));
-    window.addEventListener('touchmove', e => { e.preventDefault(); setSteerFromPointer(e.touches[0].clientX); }, { passive:false });
+    window.addEventListener('touchmove', e => { if (e.target && e.target.closest && e.target.closest('a, button, .arcade-nav, #modal, .ctrl-btn')) return; e.preventDefault(); setSteerFromPointer(e.touches[0].clientX); }, { passive:false });
 
     window.addEventListener('keydown', e => {
       if (e.key === 'ArrowLeft' || e.key === 'a') switchLaneLeft();
